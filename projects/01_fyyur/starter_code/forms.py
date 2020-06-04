@@ -119,6 +119,7 @@ class VenueForm(Form):
             ('Reggae', 'Reggae'),
             ('Rock n Roll', 'Rock n Roll'),
             ('Soul', 'Soul'),
+            ('Swing', 'Swing'),
             ('Other', 'Other'),
         ]
     )
@@ -193,6 +194,9 @@ class ArtistForm(Form):
         # TODO implement validation logic for state
         'phone'
     )
+    website = StringField(
+        'website'
+    )
     image_link = StringField(
         'image_link'
     )
@@ -224,6 +228,13 @@ class ArtistForm(Form):
     facebook_link = StringField(
         # TODO implement enum restriction
         'facebook_link', validators=[URL()]
+    )
+
+    seeking_venue = BooleanField(
+        'seeking_venue'
+    )
+    seeking_description = StringField(
+        'seeking_description'
     )
 
 # TODO IMPLEMENT NEW ARTIST FORM AND NEW SHOW FORM
