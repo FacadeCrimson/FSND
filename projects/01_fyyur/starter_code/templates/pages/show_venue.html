@@ -40,7 +40,11 @@
 		<p class="not-seeking">
 			<i class="fas fa-moon"></i> Not currently seeking talent
 		</p>
+		
 		{% endif %}
+		<br/>
+		<br/>
+		<input class="delete-venue" type="button" value="Delete" data-id="{{ venue.id }}" style="float: right;"/>
 	</div>
 	<div class="col-sm-6">
 		<img src="{{ venue.image_link }}" alt="Venue Image" />
@@ -74,6 +78,19 @@
 		{% endfor %}
 	</div>
 </section>
-
+<script>
+	deleteBtns = document.querySelectorAll(".delete-venue");
+      
+	const deleteBtn = deleteBtns[0];
+	deleteBtn.onclick = function(e) {
+		const venueId = e.target.dataset.id;
+		fetch('/venues/'+venueId,{
+		method: 'DELETE'
+		}).then(function() {
+           window.location.replace("/venues");
+			})
+		}
+      
+</script>
 {% endblock %}
 
