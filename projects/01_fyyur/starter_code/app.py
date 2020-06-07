@@ -8,7 +8,7 @@ import babel
 from flask import Flask, render_template, request, Response, flash, redirect, url_for
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import or_,func,distinct
+from sqlalchemy import or_,func,distinct,case
 import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
@@ -50,9 +50,9 @@ class Venue(db.Model):
     address = db.Column(db.String(120))
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    website=db.Column(db.String(120))
-    facebook_link = db.Column(db.String(120))
+    phone = db.Column(db.String(120),unique=True)
+    website=db.Column(db.String(120),unique=True)
+    facebook_link = db.Column(db.String(120),unique=True)
     seeking_talent=db.Column(db.Boolean)
     seeking_description=db.Column(db.String())
     image_link = db.Column(db.String(500))
@@ -69,10 +69,10 @@ class Artist(db.Model):
     name = db.Column(db.String, nullable=False)
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    website=db.Column(db.String(120))
+    phone = db.Column(db.String(120),unique=True)
+    website=db.Column(db.String(120),unique=True)
     image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
+    facebook_link = db.Column(db.String(120),unique=True)
     seeking_venue=db.Column(db.Boolean)
     seeking_description=db.Column(db.String())
     genres = db.relationship('Genres',secondary=artist_genres,backref=db.backref('Genres',lazy=True))
@@ -87,7 +87,7 @@ class Genres(db.Model):
     __tablename__ = 'Genres'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
+    name = db.Column(db.String, nullable=False,unique=True)
     #insert into "Genres" (name) values ('Alternative'),('Blues'),('Classical'), ('Country'),('Electronic'),('Folk'),('Funk'),('Hip-Hop'),('Heavy Metal'),('Instrumental'),('Jazz'),('Musical Theatre'),('Pop'),('Punk'),('R&B'),('Reggae'),('Rock n Roll'),('Soul'),('Other');
 
 class Show(db.Model):
@@ -132,7 +132,8 @@ def index():
 def venues():
   # TODO: replace with real venues data.
   #       num_shows should be aggregated based on number of upcoming shows per venue.
-  data=db.session.query(Venue.id,Venue.name,Venue.state,Venue.city,func.count(Show.time>=datetime.now())).outerjoin(Show).filter(or_(Show.time>=datetime.now(),Show.time == None)).group_by(Venue.id,Venue.name,Venue.state,Venue.city).all()
+  t=datetime.now()
+  data=db.session.query(Venue.id,Venue.name,Venue.state,Venue.city,func.count(case([(Show.time>t, 1)]))).join(Show).group_by(Venue.id,Venue.name,Venue.state,Venue.city).order_by(Venue.state,Venue.city).all()
   area=[]
   state=""
   city=""
@@ -258,6 +259,24 @@ def delete_venue(venue_id):
   return render_template('pages/venues.html')
   # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
   # clicking that button delete it from the db then redirect the user to the homepage
+
+@app.route('/artists/<artist_id>', methods=['DELETE'])
+def delete_artist(artist_id):
+  # TODO: Complete this endpoint for taking a venue_id, and using
+  # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
+  
+  name=""
+  try:
+      artist = Artist.query.get(artist_id)
+      name=artist.name[:]
+      db.session.delete(artist)
+      db.session.commit()
+      flash('Artist ' + name + ' was successfully deleted!')
+  except():
+      db.session.rollback()
+  finally:
+      db.session.close()
+  return render_template('pages/artists.html')
   
 
 #  Artists
