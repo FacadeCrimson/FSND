@@ -133,7 +133,7 @@ def venues():
   # TODO: replace with real venues data.
   #       num_shows should be aggregated based on number of upcoming shows per venue.
   t=datetime.now()
-  data=db.session.query(Venue.id,Venue.name,Venue.state,Venue.city,func.count(case([(Show.time>t, 1)]))).join(Show).group_by(Venue.id,Venue.name,Venue.state,Venue.city).order_by(Venue.state,Venue.city).all()
+  data=db.session.query(Venue.id,Venue.name,Venue.state,Venue.city,func.count(case([(Show.time>t, 1)]))).outerjoin(Show).group_by(Venue.id,Venue.name,Venue.state,Venue.city).order_by(Venue.state,Venue.city).all()
   area=[]
   state=""
   city=""
