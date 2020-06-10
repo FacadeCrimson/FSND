@@ -61,14 +61,20 @@ class QuizView extends Component {
       },
       crossDomain: true,
       success: (result) => {
-        this.setState({
-          showAnswer: false,
-          previousQuestions: previousQuestions,
-          currentQuestion: result.question,
-          guess: '',
-          forceEnd: result.question ? false : true
-        })
-        return;
+        if (result.success=="End"){
+          this.renderFinalScore()
+        }
+        else{
+          this.setState({
+            showAnswer: false,
+            previousQuestions: previousQuestions,
+            currentQuestion: result.question,
+            guess: '',
+            forceEnd: result.question ? false : true
+          })
+          return;
+        }
+        
       },
       error: (error) => {
         alert('Unable to load question. Please try your request again')
@@ -132,7 +138,7 @@ class QuizView extends Component {
 
   evaluateAnswer = () => {
     const formatGuess = this.state.guess.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").toLowerCase()
-    const answerArray = this.state.currentQuestion.answer.toLowerCase().split(' ');
+    const answerArray = this.state.currentQuestion.answer.toLowerCase();
     return answerArray.includes(formatGuess)
   }
 

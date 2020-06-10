@@ -78,7 +78,7 @@ class QuestionView extends Component {
 
   submitSearch = (searchTerm) => {
     $.ajax({
-      url: `/questions`, //TODO: update request URL
+      url: `/search`, 
       type: "POST",
       dataType: 'json',
       contentType: 'application/json',
@@ -96,6 +96,7 @@ class QuestionView extends Component {
       },
       error: (error) => {
         alert('Unable to load questions. Please try your request again')
+        this.getQuestions();
         return;
       }
     })
@@ -108,6 +109,7 @@ class QuestionView extends Component {
           url: `/questions/${id}`, //TODO: update request URL
           type: "DELETE",
           success: (result) => {
+            this.state.page=1
             this.getQuestions();
           },
           error: (error) => {
@@ -141,7 +143,7 @@ class QuestionView extends Component {
               key={q.id}
               question={q.question}
               answer={q.answer}
-              category={this.state.categories[q.category]} 
+              category={this.state.categories[q.category-1]} 
               difficulty={q.difficulty}
               questionAction={this.questionAction(q.id)}
             />
