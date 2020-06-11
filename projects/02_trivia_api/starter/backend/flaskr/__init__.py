@@ -94,32 +94,38 @@ def create_app(test_config=None):
 
     @app.route('/search', methods=['POST'])
     def search():
-        data=request.get_json()['searchTerm']
-        selection=Question.query.filter(Question.question.ilike('%'+data+'%')).all()
-        if len(selection)==0:
-          return "Failed"
-        current_questions=pagination(request, selection) 
-        return jsonify({
-          'success': True,
-          'questions': current_questions,
-          'total_questions': len(selection),
-          'current_category': 1
-        })
+        try:
+          data=request.get_json()['searchTerm']
+          selection=Question.query.filter(Question.question.ilike('%'+data+'%')).all()
+          if len(selection)==0:
+            return "Failed"
+          current_questions=pagination(request, selection)
+        except:
+          abort(400)
+        else:
+          return jsonify({
+            'success': True,
+            'questions': current_questions,
+            'total_questions': len(selection),
+            'current_category': 1
+          })
 
     @app.route('/categories/<int:Cid>/questions')
     def category_questions(Cid):
-        selection=Question.query.join(Category, Category.id==Question.category).filter(Category.id==Cid+1).order_by(Question.id).all()
-        if not selection:
-          abort(404)
-        current_questions=pagination(request, selection)
-        if len(current_questions)==0:
-          abort(404)
-        return jsonify({
-          'success': True,
-          'questions': current_questions,
-          'total_questions': len(selection),
-          'current_category': Cid+1
-        })
+        try:
+          selection=Question.query.join(Category, Category.id==Question.category).filter(Category.id==Cid+1).order_by(Question.id).all()
+          current_questions=pagination(request, selection)
+          if len(current_questions)==0:
+            abort(404)
+        except:
+          abort(400)
+        else:
+          return jsonify({
+            'success': True,
+            'questions': current_questions,
+            'total_questions': len(selection),
+            'current_category': Cid+1
+          })
 
     @app.route('/quizzes', methods=['POST'])
     def quiz():

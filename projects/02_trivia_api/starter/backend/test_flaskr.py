@@ -94,31 +94,34 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'],False)
         self.assertEqual(data['message'],"Unprocessable")
 
-    def search(self):
-        res=self.client().post('/search',{'searchTerm','la'})
+    def test_search(self):
+        res=self.client().post('/search',json={'searchTerm':'la'})
         data=json.loads(res.data)
         self.assertEqual(res.status_code,200)
         self.assertEqual(data['success'],True)
         self.assertTrue(data['total_questions'])
 
-    def search_failure(self):
-        res=self.client().post('/search',{'searchTerm','la'})
-        self.assertEqual(res,"Failed")
-    
-    def get_category_question(self):
-        res=self.client().post('/categories/1/questions')
+    def test_search_failure(self):
+        res=self.client().post('/search',json={'search':'asasda'})
         data=json.loads(res.data)
-        self.assertEqual(res.status_code,200)
-        self.assertEqual(data['success'],True)
-        self.assertEqual(data['current_category'],'1')
-        self.assertTrue(data['total_questions'])
-
-    def get_category_question_failure(self):
-        res=self.client().post('/categories/10/questions')
-        data=json.loads(res.data)
-        self.assertEqual(res.status_code,404)
+        self.assertEqual(res.status_code,400)
         self.assertEqual(data['success'],False)
-        self.assertEqual(data['message'],"not found")
+        self.assertEqual(data['message'],"bad request")
+    
+    def test_get_category_question(self):
+        res=self.client().get('/categories/1/questions')
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code,200)
+        self.assertEqual(data['success'],True)
+        self.assertEqual(data['current_category'],2)
+        self.assertTrue(data['total_questions'])
+
+    def test_get_category_question_failure(self):
+        res=self.client().get('/categories/10/questions')
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code,400)
+        self.assertEqual(data['success'],False)
+        self.assertEqual(data['message'],"bad request")
     
     
     

@@ -16,38 +16,55 @@ CORS(app)
 !! NOTE THIS WILL DROP ALL RECORDS AND START YOUR DB FROM SCRATCH
 !! NOTE THIS MUST BE UNCOMMENTED ON FIRST RUN
 '''
-# db_drop_and_create_all()
+db_drop_and_create_all()
 
 ## ROUTES
-'''
-@TODO implement endpoint
-    GET /drinks
-        it should be a public endpoint
-        it should contain only the drink.short() data representation
-    returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
-        or appropriate status code indicating reason for failure
-'''
-
+@app.route('/drinks')
+def drinks():
+    drink=Drink.query.order_by(Drink.id).all()
+    drinks=[x.short() for x in drink]
+    return jsonify({
+        "success": True,
+        "drinks": drinks
+    })
 
 '''
 @TODO implement endpoint
     GET /drinks-detail
         it should require the 'get:drinks-detail' permission
-        it should contain the drink.long() data representation
-    returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
-        or appropriate status code indicating reason for failure
 '''
-
+@app.route('/drinks-detail')
+def drinks_detail():
+    drink=Drink.query.order_by(Drink.id).all()
+    drinks=[x.long() for x in drink]
+    return jsonify({
+        "success": True,
+        "drinks": drinks
+    })
 
 '''
 @TODO implement endpoint
     POST /drinks
-        it should create a new row in the drinks table
         it should require the 'post:drinks' permission
         it should contain the drink.long() data representation
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the newly created drink
         or appropriate status code indicating reason for failure
 '''
+
+@app.route('/drinks',methods=['POST'])
+def post_drinks():
+    data=request.get_json()
+    id,title,recipe=data['id'],data['title'],data['recipe']
+
+
+     # Autoincrementing, unique primary key
+    id = Column(Integer().with_variant(Integer, "sqlite"), primary_key=True)
+    # String Title
+    title = Column(String(80), unique=True)
+    # the ingredients blob - this stores a lazy json blob
+    # the required datatype is [{'color': string, 'name':string, 'parts':number}]
+    recipe =  Column(String(180), nullable=False)
+
 
 
 '''
