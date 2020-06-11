@@ -34,7 +34,15 @@ class TriviaTestCase(unittest.TestCase):
             'difficulty':1
 
         }
-    
+
+        self.badquestion={
+            'question':'What is your name?',
+            'answer':'Simon',
+            'category':'10',
+            'difficulty':10
+
+        }
+
     def tearDown(self):
         """Executed after reach test"""
         pass
@@ -42,32 +50,76 @@ class TriviaTestCase(unittest.TestCase):
     def test_category(self):
         res=self.client().get('/categories')
         self.assertEqual(res.status_code,200)
-    
+
     def test_get_paginated_questions(self):
         res=self.client().get('/questions')
         data=json.loads(res.data)
-
         self.assertEqual(res.status_code,200)
         self.assertEqual(data['success'],True)
         self.assertTrue(data['total_questions'])
         self.assertTrue(len(data['questions']))
-
-    def test_delete(self):
-        res=self.client().delete('/questions/10')
-        data=json.loads(res.data)
-
-        self.assertEqual(res.status_code,500)
-        self.assertEqual(data['success'],False)
-        self.assertEqual(data['message'],"Internal Server Error")
-
     
+    def test_get_paginated_questions_failure(self):
+        res=self.client().get('/questions?page=10')
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code,404)
+        self.assertEqual(data['success'],False)
+        self.assertEqual(data['message'],"not found")
+
+  
     def test_post(self):
         res=self.client().post('/questions',json=self.newquestion)
         data=json.loads(res.data)
         self.assertEqual(res.status_code,200)
         self.assertEqual(data['success'],True)
         self.assertTrue(data['id'])
+    
+    def test_post_failure(self):
+        res=self.client().post('/questions',json=self.badquestion)
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code,500)
+        self.assertEqual(data['success'],False)
+        self.assertEqual(data['message'],"Internal Server Error")
 
+    def test_delete(self):
+        res=self.client().delete('/questions/20')
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code,200)
+        self.assertEqual(data['success'],True)
+
+    def test_delete_failure(self):
+        res=self.client().delete('/questions/1')
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code,422)
+        self.assertEqual(data['success'],False)
+        self.assertEqual(data['message'],"Unprocessable")
+
+    def search(self):
+        res=self.client().post('/search',{'searchTerm','la'})
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code,200)
+        self.assertEqual(data['success'],True)
+        self.assertTrue(data['total_questions'])
+
+    def search_failure(self):
+        res=self.client().post('/search',{'searchTerm','la'})
+        self.assertEqual(res,"Failed")
+    
+    def get_category_question(self):
+        res=self.client().post('/categories/1/questions')
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code,200)
+        self.assertEqual(data['success'],True)
+        self.assertEqual(data['current_category'],'1')
+        self.assertTrue(data['total_questions'])
+
+    def get_category_question_failure(self):
+        res=self.client().post('/categories/10/questions')
+        data=json.loads(res.data)
+        self.assertEqual(res.status_code,404)
+        self.assertEqual(data['success'],False)
+        self.assertEqual(data['message'],"not found")
+    
     
     
 # Make the tests conveniently executable
