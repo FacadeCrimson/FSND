@@ -22,7 +22,7 @@ export class AuthService {
 
   build_login_link(callbackPath = '') {
     let link = 'https://';
-    link += this.url + '.auth0.com';
+    link += this.url;
     link += '/authorize?';
     link += 'audience=' + this.audience + '&';
     link += 'response_type=token&';
@@ -69,9 +69,11 @@ export class AuthService {
   }
 
   logout() {
-    this.token = '';
+    this.token = "";
     this.payload = null;
     this.set_jwt();
+    window.location.href='https://simontan.auth0.com/v2/logout?returnTo=http%3A%2F%2Flocalhost%3A8100%2Ftabs%2Fuser-page';
+  
   }
 
   can(permission: string) {
