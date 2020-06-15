@@ -5,8 +5,6 @@ from flask_cors import CORS
 from flask_migrate import Migrate
 from models import setup_db, Stock, db
 
-# os.system('python try.py')
-
 def create_app(test_config=None):
   # create and configure the app
   app = Flask(__name__)
@@ -18,10 +16,8 @@ def create_app(test_config=None):
 
 app = create_app()
 
-
 @app.route('/')
 def get_price():
-  return "Hello World!"
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=True)
+  return jsonify({
+    "price":db.session.query(Stock.price).order_by(Stock.id.desc()).first()[0]
+  })
