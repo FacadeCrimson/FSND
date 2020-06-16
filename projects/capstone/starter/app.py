@@ -1,14 +1,15 @@
 import os
 import sys
 import subprocess
+import requests
 from datetime import datetime
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_migrate import Migrate
 
-from auth import requires_auth
-from models import setup_db, Price, Stock, db
+from auth import requires_auth, sign_up, log_in, verify_decode_jwt
+from models import setup_db, Price, Stock, Trader, db
 
 def create_app(test_config=None):
     # create and configure the app
@@ -38,14 +39,40 @@ def exchange_get_price(exchange_id):
     values = {x.code:x.price for x in query}
     return jsonify(values)
 
-# Register as trader
+# Register as trader by providing name, email and password
 # Permission required: none
 @app.route('/register', methods=['POST'])
-def sell_stock():
-    
+def register():
+    req = request.get_json()
+    email = req['email']
+    password = req['password']
+    name = req['name']
+    id = sign_up(email,password)['_id']
+    try:
+        trader = Trader(id = id, name = name, email = email, cash = 10000)
+        trader.insert()
+    except:
+        abort(422)
     return jsonify({
       "success":True
     })
+
+@app.route('/login', methods=['POST'])
+def login():
+    req = request.get_json()
+    email = req['email']
+    password = req['password']
+    try:
+        token = log_in(email, password)['access_token']
+        payload = verify_decode_jwt(token)
+        id = payload["sub"][6:]
+        trader = Trader.query.get(id)
+    except:
+        abort(403)
+    return f'''
+    Hello {trader.name}!
+    You have {trader.cash} dollars in your account.
+    '''
 
 # Buy a certain stock
 # Permission required: trade:stock
@@ -70,7 +97,6 @@ def sell_stock():
 
 # List a new stock
 # Permission required: list:stock
-# curl -X POST -H 'Content-Type: application/json' -d '{"exchange":1,"price":50,"name":"Microsoft","code":"MSFT"}' 0.0.0.0:8080/public
 @app.route('/list', methods=['POST'])
 def list_stock():
     req = request.get_json()

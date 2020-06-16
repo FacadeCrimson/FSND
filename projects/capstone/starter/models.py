@@ -61,7 +61,7 @@ class Price(db.Model):
 
 
 trader_stocks = db.Table('trader_stocks',
-  Column('trader_id', Integer, ForeignKey('trader.id'),primary_key = True),
+  Column('trader_id', String, ForeignKey('trader.id'),primary_key = True),
   Column('stock_code', String, ForeignKey('stock.code'),primary_key = True),
   Column('position', Integer, nullable = False)
 )
@@ -88,10 +88,22 @@ class Stock(db.Model):
 class Trader(db.Model):
     __tablename__ = 'trader'
 
-    id = Column(Integer, primary_key = True)
+    id = Column(String, index = True, primary_key = True)
     name = Column(String,nullable = False)
+    email = Column(String, nullable = False)
     cash = Column(Integer,nullable = False)
     stocks = db.relationship('Stock',secondary = trader_stocks,backref = db.backref('trader',cascade='all,delete', lazy = True))
+
+    def insert(self):
+        db.session.add(self)
+        db.session.commit()
+    
+    def update(self):
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
 
 class Market(db.Model):
     __tablename__ = 'market'

@@ -1,5 +1,7 @@
 import os
 import json
+import requests
+import flask_login
 from jose import jwt
 from functools import wraps
 from urllib.request import urlopen
@@ -9,6 +11,7 @@ AUTH0_DOMAIN = os.environ['URL']
 ALGORITHMS = ['RS256']
 API_AUDIENCE = os.environ['AUDIENCE']
 API_CLIENT = os.environ['CLIENTID']
+API_CONNECTION = os.environ['CONNECTION']
 
 ## AuthError Exception
 class AuthError(Exception):
@@ -129,3 +132,23 @@ def requires_auth(permission=''):
 
         return wrapper
     return requires_auth_decorator
+
+def sign_up(email,password):
+    url = "https://"+AUTH0_DOMAIN +"/dbconnections/signup"
+    payload = 'client_id=' + API_CLIENT + '&email=' + email + '&password=' + password + '&connection=' + API_CONNECTION
+    headers = {
+    'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    response = requests.request("POST", url, headers=headers, data = payload).text
+    return json.loads(response)
+
+def log_in(email,password):
+    url = "https://"+AUTH0_DOMAIN +"/oauth/token"
+    payload = 'grant_type=password&client_id=' + API_CLIENT + '&audience=' + API_AUDIENCE + '&username=' + email + '&password=' + password
+    headers = {
+    'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    response = requests.request("POST", url, headers=headers, data = payload).text
+    return json.loads(response)
+
+login_manager = LoginManager()
