@@ -20,10 +20,8 @@ def setup_db(app, database_path=database_path):
     db.init_app(app)
     db.create_all()
 
-
 '''
-Stock Price
-
+Table for constantly updating stock price
 '''
 class Price(db.Model):  
     __tablename__ = 'price'
@@ -32,12 +30,6 @@ class Price(db.Model):
     code = Column(String, ForeignKey('stock.code'), index=True)
     price = Column(Integer,nullable=False)
     timestamp = Column(DateTime,nullable=False)
-
-    #   def __init__(self, question, answer, category, difficulty):
-    #     self.question = question
-    #     self.answer = answer
-    #     self.category = category
-    #     self.difficulty = difficulty
 
     def insert(self):
         db.session.add(self)
@@ -50,15 +42,9 @@ class Price(db.Model):
         db.session.delete(self)
         db.session.commit()
 
-    #   def format(self):
-    #     return {
-    #       'id': self.id,
-    #       'question': self.question,
-    #       'answer': self.answer,
-    #       'category': self.category,
-    #       'difficulty': self.difficulty
-    #     }
-
+'''
+Asscociation table for the many-to-many relationship between Trader and Stock
+'''
 class Possession(db.Model):
     __tablename__ = 'possession'
 

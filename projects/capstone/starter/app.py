@@ -40,11 +40,6 @@ def exchange_get_price(exchange_id):
     values = {x.code:x.price for x in query}
     return jsonify(values)
 
-@app.route('/getcookie')
-def getcookie():
-   cookie = request.cookies.get('session')
-   return cookie
-
 # Register as trader by providing name, email and password
 # Permission required: none
 @app.route('/register', methods=['POST'])
@@ -63,6 +58,8 @@ def register():
       "success":True
     })
 
+# Log in with email and password
+# Permission required: none
 @app.route('/login', methods=['POST'])
 def login():
     req = request.get_json()
@@ -86,6 +83,8 @@ def login():
         message = message + f"You have {stock.position} shares of {stock.stock_code}.\n"
     return message
 
+# Log out
+# Permission required: none
 @app.route('/logout')
 def logout():
     session.pop('token', None)

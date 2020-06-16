@@ -7,7 +7,7 @@ from app import app
 from models import Price, Stock, db
 
 with app.app_context():
-    #Retrieve the last traded price for each stock
+    #Retrieve the newest price for each stock
     query = db.session.query(Price).distinct(Price.code).order_by(Price.code,Price.id.desc()).all()
     values = {x.code:x.price for x in query}
 
