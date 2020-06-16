@@ -3,21 +3,22 @@ import sys
 import subprocess
 import requests
 from datetime import datetime
-from flask import Flask, request, abort, jsonify
+from flask import Flask, request, abort, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_migrate import Migrate
+from sqlalchemy import and_
 
-from auth import requires_auth, sign_up, log_in, verify_decode_jwt
-from models import setup_db, Price, Stock, Trader, db
+from auth import requires_auth, sign_up, log_in, verify_decode_jwt, auth_and_get_trader
+from models import setup_db, Price, Stock, Trader, Possession, db
 
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
+    app.secret_key = os.urandom(16)
     CORS(app)
     setup_db(app)
     migrate = Migrate(app, db)
-
     return app
 
 app = create_app()
@@ -39,14 +40,19 @@ def exchange_get_price(exchange_id):
     values = {x.code:x.price for x in query}
     return jsonify(values)
 
+@app.route('/getcookie')
+def getcookie():
+   cookie = request.cookies.get('session')
+   return cookie
+
 # Register as trader by providing name, email and password
 # Permission required: none
 @app.route('/register', methods=['POST'])
 def register():
     req = request.get_json()
+    name = req['name']
     email = req['email']
     password = req['password']
-    name = req['name']
     id = sign_up(email,password)['_id']
     try:
         trader = Trader(id = id, name = name, email = email, cash = 10000)
@@ -67,37 +73,79 @@ def login():
         payload = verify_decode_jwt(token)
         id = payload["sub"][6:]
         trader = Trader.query.get(id)
+        session['token'] = token
+        stocks = Possession.query.filter(Possession.trader_id == id)
     except:
         abort(403)
-    return f'''
+    message = f'''
     Hello {trader.name}!
     You have {trader.cash} dollars in your account.
+
     '''
+    for stock in stocks:
+        message = message + f"You have {stock.position} shares of {stock.stock_code}.\n"
+    return message
+
+@app.route('/logout')
+def logout():
+    session.pop('token', None)
+    return "Successfully logged out!"
 
 # Buy a certain stock
 # Permission required: trade:stock
 @app.route('/buy', methods=['POST'])
-@requires_auth('trade:stock')
-def buy_stock(jwt):
+@auth_and_get_trader('trade:stock')
+def buy_stock(id, jwt):
     req = request.get_json()
     shares = req['shares']
     code = req['code']
-    return jsonify({
-      "success":True
-    })
+    trader = Trader.query.get(id)
+    stock = Stock.query.get(code)
+    cash = trader.cash
+    price = Price.query.filter(Price.code == code)\
+      .order_by(Price.id.desc()).first()
+    result = cash - shares * price.price
+    if result < 0:
+        return "Sorry, you have insufficient fund."
+    else:
+        trader.cash = result
+        poss = Possession(position = shares)
+        poss.stock = stock
+        poss.trader = trader
+        poss.insert()
+        trader.stocks.append(poss)
+    return f"You have successfully acquired {shares} shares of stock {code}."
 
 # Sell a certain stock
 # Permission required: trade:stock
 @app.route('/sell', methods=['POST'])
-@requires_auth('trade:stock')
-def sell_stock():
-    return jsonify({
-      "success":True
-    })
+@auth_and_get_trader('trade:stock')
+def sell_stock(id, jwt):
+    req = request.get_json()
+    shares = req['shares']
+    code = req['code']
+    position = db.session.query(Possession).\
+      filter(and_(Possession.trader_id == id, Possession.stock_code == code)).first()
+    if not position or position.position < shares:
+        return "Sorry, you have insufficient stocks."
+
+    trader = Trader.query.get(id)
+    stock = Stock.query.get(code)
+    price = Price.query.filter(Price.code == code)\
+      .order_by(Price.id.desc()).first()
+    new_position = position.position - shares
+
+    if new_position == 0:
+        position.delete()
+    trader.cash = trader.cash + price.price * shares
+    position.position = new_position
+    db.session.commit()
+    return f"You have successfully sold {shares} shares of stock {code}."
 
 # List a new stock
 # Permission required: list:stock
 @app.route('/list', methods=['POST'])
+@requires_auth('list:stock')
 def list_stock():
     req = request.get_json()
     try:
@@ -118,6 +166,7 @@ def list_stock():
 # Unlist a stock
 # Permission required: unlist:stock
 @app.route('/stock/<stock_code>', methods=['DELETE'])
+@requires_auth('unlist:stock')
 def unlist_stock(stock_code):
     stock = Stock.query.get(stock_code)
     try:
@@ -131,6 +180,7 @@ def unlist_stock(stock_code):
 # Modify a stock's name or exchange
 # Permission required: modify:stock
 @app.route('/stock/<stock_code>', methods=['PATCH'])
+@requires_auth('modify:stock')
 def modify_stock(stock_code):
     stock = Stock.query.get(stock_code)
     req = request.get_json()

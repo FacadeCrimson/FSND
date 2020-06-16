@@ -5,7 +5,7 @@ import flask_login
 from jose import jwt
 from functools import wraps
 from urllib.request import urlopen
-from flask import request, _request_ctx_stack
+from flask import request, _request_ctx_stack, session
 
 AUTH0_DOMAIN = os.environ['URL']
 ALGORITHMS = ['RS256']
@@ -20,9 +20,13 @@ class AuthError(Exception):
         self.status_code = status_code
 
 ## Check Auth Header
-def get_token_auth_header():
+## If header contains not Authorization, check cookie instead
+def get_token():
     """Obtains the Access Token from the Authorization Header
     """
+    if 'token' in session:
+        token = session['token']
+        return token
     auth = request.headers.get('Authorization', None)
     if not auth:
         raise AuthError({
@@ -125,10 +129,23 @@ def requires_auth(permission=''):
     def requires_auth_decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            token = get_token_auth_header()
+            token = get_token()
             payload = verify_decode_jwt(token)
             check_permissions(permission,payload)
             return f(payload, *args, **kwargs)
+
+        return wrapper
+    return requires_auth_decorator
+
+def auth_and_get_trader(permission=''):
+    def requires_auth_decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            token = get_token()
+            payload = verify_decode_jwt(token)
+            check_permissions(permission,payload)
+            id = payload["sub"][6:]
+            return f(id, payload, *args, **kwargs)
 
         return wrapper
     return requires_auth_decorator
@@ -150,5 +167,3 @@ def log_in(email,password):
     }
     response = requests.request("POST", url, headers=headers, data = payload).text
     return json.loads(response)
-
-login_manager = LoginManager()

@@ -59,12 +59,25 @@ class Price(db.Model):
     #       'difficulty': self.difficulty
     #     }
 
+class Possession(db.Model):
+    __tablename__ = 'possession'
 
-trader_stocks = db.Table('trader_stocks',
-  Column('trader_id', String, ForeignKey('trader.id'),primary_key = True),
-  Column('stock_code', String, ForeignKey('stock.code'),primary_key = True),
-  Column('position', Integer, nullable = False)
-)
+    trader_id = Column(String, ForeignKey('trader.id'), primary_key=True)
+    stock_code = Column(String, ForeignKey('stock.code'), primary_key=True)
+    position = Column(Integer, nullable = False)
+    stock = db.relationship("Stock", back_populates="traders")
+    trader = db.relationship("Trader", back_populates="stocks")
+
+    def insert(self):
+        db.session.add(self)
+        db.session.commit()
+    
+    def update(self):
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
 
 class Stock(db.Model):  
     __tablename__ = 'stock'
@@ -73,6 +86,7 @@ class Stock(db.Model):
     name = Column(String,nullable = False)
     market_id = Column(Integer, ForeignKey('market.id'))
     prices = db.relationship('Price',backref = 'stock', cascade='all,delete', lazy = True)
+    traders = db.relationship("Possession", back_populates="stock")
 
     def insert(self):
         db.session.add(self)
@@ -92,7 +106,7 @@ class Trader(db.Model):
     name = Column(String,nullable = False)
     email = Column(String, nullable = False)
     cash = Column(Integer,nullable = False)
-    stocks = db.relationship('Stock',secondary = trader_stocks,backref = db.backref('trader',cascade='all,delete', lazy = True))
+    stocks = db.relationship("Possession", back_populates="trader")
 
     def insert(self):
         db.session.add(self)
